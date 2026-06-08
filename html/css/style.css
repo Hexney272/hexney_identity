@@ -742,3 +742,39 @@ html, body {
         animation: none !important;
     }
 }
+
+
+/* =====================================================================
+   V3.1.1: ANTI-BALLOON SAFETY GUARDS
+   Guarantees no element can ever grow to fill the screen, even if the
+   stylesheet loads late or a value is misconfigured.
+   ===================================================================== */
+
+:root {
+    --ui-scale: 1;               /* hard default for the scale variable */
+}
+
+/* stat rings: fixed size, never flex-grow, clip just in case */
+.rings {
+    overflow: hidden;
+}
+
+.ring {
+    min-width: 0;
+}
+
+.ring__svg {
+    flex: 0 0 auto;
+    display: block;
+    width: 58px;
+    height: 58px;
+    max-width: 58px;
+    max-height: 58px;
+}
+
+/* panels can never exceed the viewport height */
+.card,
+.online {
+    max-height: 94vh;
+    overflow: hidden;
+}

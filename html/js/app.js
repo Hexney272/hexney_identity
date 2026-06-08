@@ -82,6 +82,10 @@
             const svg = document.createElementNS(ns, 'svg');
             svg.setAttribute('class', 'ring__svg');
             svg.setAttribute('viewBox', '0 0 58 58');
+            // explicit intrinsic size so the ring can NEVER balloon even if
+            // the stylesheet is late/missing in the CEF browser.
+            svg.setAttribute('width', '58');
+            svg.setAttribute('height', '58');
 
             const bg = document.createElementNS(ns, 'circle');
             bg.setAttribute('class', 'ring__bg');
@@ -172,9 +176,10 @@
         let scale = uiPrefs.uiScale || 1.0;
         if (uiPrefs.autoScale) {
             // fit relative to a 1080p reference, clamped
-            const fit = window.innerHeight / 1080;
+            const fit = (window.innerHeight || 1080) / 1080;
             scale = fit * (uiPrefs.uiScale || 1.0);
         }
+        if (!isFinite(scale) || scale <= 0) scale = 1.0;
         scale = Math.max(uiPrefs.minScale || 0.6, Math.min(uiPrefs.maxScale || 1.6, scale));
         document.documentElement.style.setProperty('--ui-scale', scale.toFixed(3));
     }

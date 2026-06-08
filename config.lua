@@ -120,13 +120,20 @@ end
 -- render is drawn natively with DrawSprite ON TOP of the NUI card, lined
 -- up with the avatar slot. Tune the normalized screen position (0..1) so
 -- it sits inside the avatar frame for your resolution / safezone.
+--
+-- IMPORTANT: this is a NATIVE overlay drawn directly on the game screen
+-- (not inside the NUI), so its position/size are resolution-dependent and
+-- MUST be tuned per server. It is therefore DISABLED by default. The card
+-- shows the job emoji in the avatar slot until you enable + tune this.
+-- The draw size is hard-clamped (see client.lua) so a bad value can never
+-- cover the screen.
 Config.PedRender = {
-    enabled = true,
+    enabled = false,
     -- normalized screen coords (1920x1080 reference defaults)
-    x = 0.158,   -- center X
-    y = 0.330,   -- center Y
-    w = 0.052,   -- width
-    h = 0.092,   -- height
+    x = 0.158,   -- center X   (0..1)
+    y = 0.330,   -- center Y   (0..1)
+    w = 0.052,   -- width      (0..1, clamped to <= 0.15)
+    h = 0.092,   -- height     (0..1, clamped to <= 0.22)
 }
 
 -----------------------------------------------------------

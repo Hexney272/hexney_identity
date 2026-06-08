@@ -176,7 +176,14 @@ local function requestHeadshot()
     releaseHeadshot()
 
     local ped = PlayerPedId()
-    local handle = RegisterPedheadshot(ped)
+    -- prefer the transparent-background variant so the avatar slot stays
+    -- clean (no black box); fall back to the standard one if unavailable.
+    local handle
+    if RegisterPedheadshotTransparent then
+        handle = RegisterPedheadshotTransparent(ped)
+    else
+        handle = RegisterPedheadshot(ped)
+    end
     pedHandle = handle
 
     CreateThread(function()
@@ -195,16 +202,17 @@ local function requestHeadshot()
     end)
 end
 
--- draw the headshot on top of the NUI card while it is open
+-- draw the headshot on top of the NUI card while it is open.
+-- Size is HARD-CLAMPED so a misconfigured value can never cover the screen.
 CreateThread(function()
     while true do
-        if isOpen and pedReady and pedTxd and Config.PedRender then
-            local p = Config.PedRender
-            if not HasStreamedTextureDictLoaded(pedTxd) then
-                RequestStreamedTextureDict(pedTxd, false)
-            else
-                DrawSprite(pedTxd, pedTxd, p.x, p.y, p.w, p.h, 0.0, 255, 255, 255, 255)
-            end
+        local p = Config.PedRender
+        if isOpen and pedReady and pedTxd and p and p.enabled then
+            local x = tonumber(p.x) or 0.158
+            local y = tonumber(p.y) or 0.330
+            local w = math.min(math.max(tonumber(p.w) or 0.052, 0.0), 0.15)
+            local h = math.min(math.max(tonumber(p.h) or 0.092, 0.0), 0.22)
+            DrawSprite(pedTxd, pedTxd, x, y, w, h, 0.0, 255, 255, 255, 255)
             Wait(0)
         else
             Wait(120)

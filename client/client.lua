@@ -415,6 +415,36 @@ local function pollVoice()
 end
 
 -----------------------------------------------------------
+-- V3.1: UI PREFERENCES -> NUI
+-----------------------------------------------------------
+local function sendConfig()
+    local s = Config.Sounds or {}
+    sendUI('config', {
+        animate       = Config.AnimateNumbers ~= false,
+        countUp       = Config.CountUpDuration or 650,
+        autoScale     = Config.AutoScale ~= false,
+        uiScale       = Config.UIScale or 1.0,
+        minScale      = Config.MinScale or 0.75,
+        maxScale      = Config.MaxScale or 1.35,
+        reducedMotion = Config.ReducedMotion == true,
+        colorblind    = Config.Colorblind == true,
+        sounds = {
+            enabled     = s.enabled ~= false,
+            volume      = s.volume or 0.35,
+            open        = s.open ~= false,
+            close       = s.close ~= false,
+            achievement = s.achievement ~= false,
+        },
+    })
+end
+
+-- push prefs once the NUI is up (resource start / player load)
+CreateThread(function()
+    Wait(1500)
+    sendConfig()
+end)
+
+-----------------------------------------------------------
 -- OPEN / CLOSE
 -----------------------------------------------------------
 local function openCard()
@@ -423,6 +453,7 @@ local function openCard()
     if not statsLoaded then loadStats() end
     requestHeadshot()
     resolvePhone()
+    sendConfig()
     sendUI('visibility', { visible = true })
     buildAndSend()
     refreshOnline()

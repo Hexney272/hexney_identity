@@ -39,6 +39,18 @@ GTA Online stílusú üveg-hatású (glassmorphism) játékoskártya, ami a kara
 - **Vállalkozás statok** – business-munkáknál (pl. mechanic) ugyanaz a panel
   „BUSINESS" címkével, a cég kasszájával
 
+### V3.1 – Prémium polish (RP-hangolt)
+- **Animált count-up** – a pénz / órabér / society kassza finoman felpörög
+  (eased tween), nem ugrik – diszkrét, RP-be illő
+- **Sound design** – halk, **asset nélküli** (WebAudio-val szintetizált)
+  open/close „whoosh" és achievement-csengő; hangerő-szabályozott, kikapcsolható
+- **Reszponzív skálázás** – a teljes overlay a felbontáshoz igazodik
+  (`AutoScale` + `UIScale` szorzó)
+- **Skeleton / shimmer** – az online panel betöltésig finoman „villódzik",
+  nem üres
+- **Hozzáférhetőség** – reduced-motion mód (OS-beállítást is figyeli) és
+  színvak-barát (Okabe–Ito) stat-gyűrű paletta
+
 ---
 
 ## 🧩 Függőségek
@@ -145,8 +157,9 @@ A UI FiveM nélkül is megnézhető: nyisd meg a `html/index.html`-t egy böngé
 .../html/index.html?preview=1
 ```
 
-Ez betölt egy minta-karaktert és kinyitja a kártyát, hogy lásd a layoutot
-(átlátszó háttér miatt érdemes sötét háttér elé tenni).
+Ez betölt egy minta-karaktert, kinyitja a kártyát, és egy **showcase loopot**
+futtat (count-up animáció + achievement toast), ami ideális GIF/MP4 felvételhez
+a store-listinghez. Részletes felvételi útmutató: [`docs/PREVIEW.md`](docs/PREVIEW.md).
 
 ---
 
@@ -252,6 +265,35 @@ A boss-t a grade neve (`Config.SocietyBossGrades`) vagy a numerikus szint
 
 > Ha az `esx_addonaccount` nincs telepítve, az egyenleg egyszerűen kimarad,
 > a tagszám és a rang viszont továbbra is működik.
+
+---
+
+## 🎛️ Prémium polish beállítások (V3.1)
+
+Ezek a `config.lua`-ban állíthatók, és nyitáskor a NUI-hoz továbbítódnak:
+
+```lua
+Config.AnimateNumbers  = true     -- count-up a pénznél/órabérnél/kasszánál
+Config.CountUpDuration = 650      -- ms
+
+Config.AutoScale = true           -- a felbontáshoz igazít (1080p referencia)
+Config.UIScale   = 1.0            -- extra szorzó (0.8 kisebb, 1.2 nagyobb)
+
+Config.Sounds = {                 -- asset nélküli, WebAudio-val szintetizálva
+    enabled = true, volume = 0.35,
+    open = true, close = true, achievement = true,
+}
+
+Config.ReducedMotion = false      -- animációk kikapcsolása (OS-t is figyeli)
+Config.Colorblind    = false      -- színvak-barát stat-gyűrű paletta
+```
+
+RP-tipp: ha a szervered csendes UX-et szeretne, `Config.Sounds.enabled = false`.
+
+> ⚠️ **Ped render + AutoScale:** az élő ped-rendert natívan (`DrawSprite`)
+> rajzoljuk, ami **nem** skálázódik együtt a NUI auto-scale-lel. Ha ped-rendert
+> használsz nem-1080p felbontáson, vagy állítsd `Config.AutoScale = false`-ra,
+> vagy hangold újra a `Config.PedRender` x/y/w/h értékeit.
 
 ---
 

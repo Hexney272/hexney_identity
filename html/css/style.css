@@ -660,3 +660,85 @@ html, body {
 .society__val--accent {
     color: var(--accent);
 }
+
+
+/* =====================================================================
+   V3.1: SCALING · SHIMMER · REDUCED MOTION · SOCIETY ENTRANCE
+   ===================================================================== */
+
+/* responsive scaling: the whole overlay scales as one, anchored center */
+.app {
+    transform: scale(var(--ui-scale, 1));
+    transform-origin: center center;
+}
+
+/* ---- skeleton / shimmer ---- */
+.online__row--skeleton {
+    border-left-color: var(--stroke);
+    background: rgba(255, 255, 255, 0.02);
+    animation: none;
+    opacity: 1;
+}
+
+.sk {
+    display: inline-block;
+    border-radius: 6px;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.13) 37%,
+        rgba(255, 255, 255, 0.05) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+}
+
+.sk--dot   { width: 16px; height: 16px; border-radius: 50%; }
+.sk--label { height: 10px; flex: 1; margin: 0 4px; }
+.sk--count { width: 22px; height: 12px; }
+
+.sk-text {
+    color: transparent !important;
+    border-radius: 6px;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.05) 25%,
+        rgba(255, 255, 255, 0.13) 37%,
+        rgba(255, 255, 255, 0.05) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+    0%   { background-position: 100% 0; }
+    100% { background-position: 0 0; }
+}
+
+/* ---- society entrance ---- */
+.society--in {
+    animation: societyIn 0.45s var(--ease);
+}
+
+@keyframes societyIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- reduced motion: kill transitions + decorative animations ---- */
+.app.reduced-motion *,
+.app.reduced-motion *::before,
+.app.reduced-motion *::after {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* also respect the OS/browser setting as a hard fallback */
+@media (prefers-reduced-motion: reduce) {
+    .card, .online, .toast,
+    .avatar__ring, .voice.talking span,
+    .online__row, .ach, .ring__fg, .sk, .sk-text {
+        transition: none !important;
+        animation: none !important;
+    }
+}

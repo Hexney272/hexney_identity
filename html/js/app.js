@@ -50,14 +50,27 @@
     const RING_R = 24;
     const RING_C = 2 * Math.PI * RING_R; // circumference
 
-    // which rings exist + their semantic colors
+    // which rings exist + their semantic colors (default + colorblind-safe)
     const RINGS = [
-        { key: 'health', label: 'HP',     color: '#22c55e' },
-        { key: 'armor',  label: 'ARMOR',  color: '#3b82f6' },
-        { key: 'hunger', label: 'HUNGER', color: '#f59e0b' },
-        { key: 'thirst', label: 'THIRST', color: '#38bdf8' },
+        { key: 'health', label: 'HP',     color: '#22c55e', cb: '#009E73' },
+        { key: 'armor',  label: 'ARMOR',  color: '#3b82f6', cb: '#0072B2' },
+        { key: 'hunger', label: 'HUNGER', color: '#f59e0b', cb: '#E69F00' },
+        { key: 'thirst', label: 'THIRST', color: '#38bdf8', cb: '#56B4E9' },
     ];
     const ringNodes = {}; // key -> { wrap, fg, text }
+
+    // ---- UI preferences (overridden by the 'config' NUI message) ------
+    const uiPrefs = {
+        animate: true,
+        countUp: 650,
+        autoScale: true,
+        uiScale: 1.0,
+        minScale: 0.75,
+        maxScale: 1.35,
+        reducedMotion: false,
+        colorblind: false,
+        sounds: { enabled: true, volume: 0.35, open: true, close: true, achievement: true },
+    };
 
     function buildRings() {
         const ns = 'http://www.w3.org/2000/svg';
@@ -146,6 +159,124 @@
         root.style.setProperty('--accent-soft', hexToRgba(color, 0.16));
     }
 
+    // ---- accessibility: ring palette ----------------------------------
+    function applyRingPalette(useCb) {
+        RINGS.forEach(function (r) {
+            const node = ringNodes[r.key];
+            if (node) node.fg.setAttribute('stroke', useCb ? r.cb : r.color);
+        });
+    }
+
+    // ---- responsive scaling -------------------------------------------
+    function applyScale() {
+        let scale = uiPrefs.uiScale || 1.0;
+        if (uiPrefs.autoScale) {
+            // fit relative to a 1080p reference, clamped
+            const fit = window.innerHeight / 1080;
+            scale = fit * (uiPrefs.uiScale || 1.0);
+        }
+        scale = Math.max(uiPrefs.minScale || 0.6, Math.min(uiPrefs.maxScale || 1.6, scale));
+        document.documentElement.style.setProperty('--ui-scale', scale.toFixed(3));
+    }
+    window.addEventListener('resize', applyScale);
+
+    // ---- reduced motion -----------------------------------------------
+    function prefersReducedMotionOS() {
+        return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+    function applyReducedMotion(forced) {
+        const on = forced || prefersReducedMotionOS();
+        app.classList.toggle('reduced-motion', !!on);
+        return on;
+    }
+
+    // ---- sound design (asset-free, synthesized via WebAudio) ----------
+    const Sound = (function () {
+        let ctx = null;
+        function ac() {
+            if (!ctx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (AC) ctx = new AC();
+            }
+            if (ctx && ctx.state === 'suspended') ctx.resume();
+            return ctx;
+        }
+        // a soft, short tone with an eased envelope
+        function tone(freq, dur, type, peak) {
+            if (!uiPrefs.sounds || !uiPrefs.sounds.enabled) return;
+            if (uiPrefs.reducedMotion) return; // treat as part of "motion"
+            const c = ac();
+            if (!c) return;
+            const vol = (uiPrefs.sounds.volume != null ? uiPrefs.sounds.volume : 0.35);
+            const t0 = c.currentTime;
+            const osc = c.createOscillator();
+            const gain = c.createGain();
+            osc.type = type || 'sine';
+            osc.frequency.setValueAtTime(freq, t0);
+            gain.gain.setValueAtTime(0.0001, t0);
+            gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, (peak || 0.2) * vol), t0 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+            osc.connect(gain).connect(c.destination);
+            osc.start(t0);
+            osc.stop(t0 + dur + 0.02);
+        }
+        return {
+            open:  function () { if (uiPrefs.sounds.open)  { tone(420, 0.16, 'sine', 0.18); setTimeout(function(){ tone(660, 0.12, 'sine', 0.14); }, 45); } },
+            close: function () { if (uiPrefs.sounds.close) { tone(360, 0.14, 'sine', 0.16); } },
+            chime: function () { if (uiPrefs.sounds.achievement) { tone(740, 0.14, 'sine', 0.20); setTimeout(function(){ tone(988, 0.20, 'sine', 0.18); }, 90); } },
+            unlock: function () {},
+        };
+    })();
+
+    // ---- animated count-up --------------------------------------------
+    // setNum(node, value, formatter): tweens from the node's last numeric
+    // value to the new one. Respects uiPrefs.animate / reduced motion.
+    const numState = new WeakMap();
+    function setNum(node, value, formatter) {
+        const target = Number(value) || 0;
+        const fmt = formatter || function (n) { return String(Math.round(n)); };
+
+        if (!uiPrefs.animate || uiPrefs.reducedMotion) {
+            numState.set(node, target);
+            node.textContent = fmt(target);
+            return;
+        }
+
+        const from = numState.has(node) ? numState.get(node) : target;
+        numState.set(node, target);
+        if (from === target) { node.textContent = fmt(target); return; }
+
+        const dur = uiPrefs.countUp || 650;
+        const start = performance.now();
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+        function frame(now) {
+            const t = Math.min(1, (now - start) / dur);
+            const v = from + (target - from) * easeOutCubic(t);
+            node.textContent = fmt(v);
+            if (t < 1) requestAnimationFrame(frame);
+            else node.textContent = fmt(target);
+        }
+        requestAnimationFrame(frame);
+    }
+
+    // ---- apply config pushed from Lua ---------------------------------
+    function applyConfig(cfg) {
+        if (!cfg) return;
+        if (cfg.animate       !== undefined) uiPrefs.animate = !!cfg.animate;
+        if (cfg.countUp       !== undefined) uiPrefs.countUp = cfg.countUp;
+        if (cfg.autoScale     !== undefined) uiPrefs.autoScale = !!cfg.autoScale;
+        if (cfg.uiScale       !== undefined) uiPrefs.uiScale = cfg.uiScale;
+        if (cfg.minScale      !== undefined) uiPrefs.minScale = cfg.minScale;
+        if (cfg.maxScale      !== undefined) uiPrefs.maxScale = cfg.maxScale;
+        if (cfg.colorblind    !== undefined) uiPrefs.colorblind = !!cfg.colorblind;
+        if (cfg.sounds)                      uiPrefs.sounds = Object.assign(uiPrefs.sounds, cfg.sounds);
+        if (cfg.reducedMotion !== undefined) uiPrefs.reducedMotion = !!cfg.reducedMotion;
+
+        applyScale();
+        applyRingPalette(uiPrefs.colorblind);
+        uiPrefs.reducedMotion = applyReducedMotion(cfg.reducedMotion === true);
+    }
+
     // ---- renderers ----------------------------------------------------
     function renderPlayer(p) {
         if (!p) return;
@@ -167,8 +298,8 @@
             el.phoneRow.style.display = 'none';
         }
 
-        el.cash.textContent    = formatMoney(p.cash);
-        el.bank.textContent    = formatMoney(p.bank);
+        setNum(el.cash, p.cash, formatMoney);
+        setNum(el.bank, p.bank, formatMoney);
         el.session.textContent = p.session || '0h 00m';
 
         if (p.groupKey) app.dataset.group = p.groupKey;
@@ -184,13 +315,14 @@
 
         if (p.wagePerHour !== undefined && p.wagePerHour !== null) {
             el.stats2.style.display = '';
-            el.wage.textContent   = formatMoney(p.wagePerHour);
+            setNum(el.wage, p.wagePerHour, formatMoney);
             el.weekly.textContent = p.weekly || '0h 00m';
         } else {
             el.stats2.style.display = 'none';
         }
 
         renderAchievements(p.achievements);
+        app.classList.remove('card-loading');
     }
 
     function setPed(ready) {
@@ -224,6 +356,7 @@
         el.toastEmoji.textContent = data.emoji || '🏆';
         el.toastLabel.textContent = data.label || 'Unlocked';
         el.toast.classList.add('show');
+        Sound.chime();
         clearTimeout(toastTimer);
         toastTimer = setTimeout(function () {
             el.toast.classList.remove('show');
@@ -232,7 +365,8 @@
 
     function renderOnline(data) {
         if (!data) return;
-        el.onlineTotal.textContent = data.total != null ? data.total : 0;
+        el.onlineTotal.classList.remove('sk-text');
+        setNum(el.onlineTotal, data.total != null ? data.total : 0);
         el.ping.textContent = (data.ping != null ? data.ping : 0) + 'ms';
 
         el.online.innerHTML = '';
@@ -265,6 +399,22 @@
         el.voice.classList.toggle('talking', !!talking);
     }
 
+    // ---- skeleton / shimmer loading -----------------------------------
+    function showOnlineSkeleton(rows) {
+        el.online.innerHTML = '';
+        const n = rows || 4;
+        for (let i = 0; i < n; i++) {
+            const li = document.createElement('li');
+            li.className = 'online__row online__row--skeleton';
+            li.innerHTML =
+                '<span class="sk sk--dot"></span>' +
+                '<span class="sk sk--label"></span>' +
+                '<span class="sk sk--count"></span>';
+            el.online.appendChild(li);
+        }
+        el.onlineTotal.classList.add('sk-text');
+    }
+
     // ---- V3: faction / business panel ---------------------------------
     function renderSociety(data) {
         if (!data || !data.show) {
@@ -282,18 +432,30 @@
 
         if (data.balance !== undefined && data.balance !== null) {
             el.societyBalanceRow.style.display = '';
-            el.societyBalance.textContent = formatMoney(data.balance);
+            setNum(el.societyBalance, data.balance, formatMoney);
         } else if (data.balanceHidden) {
             el.societyBalanceRow.style.display = '';
             el.societyBalance.textContent = '••••••';
         } else {
             el.societyBalanceRow.style.display = 'none';
         }
+
+        // subtle entrance (skipped under reduced motion via CSS)
+        el.society.classList.remove('society--in');
+        void el.society.offsetWidth; // restart animation
+        el.society.classList.add('society--in');
     }
 
     function setVisible(visible) {
         app.classList.toggle('visible', !!visible);
-        if (!visible) setVoice(false);
+        if (visible) {
+            app.classList.add('card-loading');
+            showOnlineSkeleton();
+            Sound.open();
+        } else {
+            setVoice(false);
+            Sound.close();
+        }
     }
 
     // ---- message bus --------------------------------------------------
@@ -307,22 +469,21 @@
             case 'ped':         setPed(msg.ready); break;
             case 'achievement': showToast(msg); break;
             case 'society':     renderSociety(msg); break;
+            case 'config':      applyConfig(msg); break;
         }
     });
 
     // ---- boot ---------------------------------------------------------
     buildRings();
+    applyScale();
+    applyReducedMotion(false);
+    applyRingPalette(false);
 
     // browser-preview helper (ignored inside FiveM): ?preview=1
     if (location.search.indexOf('preview') !== -1) {
-        renderPlayer({
-            brand: 'HEXNEY', subBrand: 'CITIZEN', name: 'John Doe', id: 17,
-            job: 'Mechanic', grade: 'Senior', groupKey: 'mechanic',
-            accent: '#f59e0b', emoji: '🔧', cash: 125000, bank: 2550000,
-            health: 88, armor: 60, hunger: 74, thirst: 52, session: '3h 12m',
-            pedReady: false, weekly: '12h 30m', wagePerHour: 18500,
-            phone: '555-0182',
-            achievements: [
+        applyConfig({ animate: true, autoScale: true, uiScale: 1.0,
+            sounds: { enabled: true, volume: 0.3 } });
+        window.__ach = [
                 { id: 'rookie',     label: 'Rookie',      emoji: '🆕', desc: 'Spend 1 hour this week',     unlocked: true },
                 { id: 'marathon',   label: 'Marathoner',  emoji: '🔥', desc: 'Play a 3h+ session',         unlocked: true },
                 { id: 'grinder',    label: 'Grinder',     emoji: '⏰', desc: 'Play 10 hours this week',     unlocked: true },
@@ -331,7 +492,15 @@
                 { id: 'lifesaver',  label: 'Lifesaver',   emoji: '🚑', desc: 'Serve as EMS',                unlocked: false },
                 { id: 'on_duty',    label: 'On Duty',     emoji: '👮', desc: 'Serve as Police',             unlocked: false },
                 { id: 'wrench',     label: 'Wrench Hand', emoji: '🔧', desc: 'Work as a Mechanic',          unlocked: true },
-            ],
+        ];
+        renderPlayer({
+            brand: 'HEXNEY', subBrand: 'CITIZEN', name: 'John Doe', id: 17,
+            job: 'Mechanic', grade: 'Senior', groupKey: 'mechanic',
+            accent: '#f59e0b', emoji: '🔧', cash: 125000, bank: 2550000,
+            health: 88, armor: 60, hunger: 74, thirst: 52, session: '3h 12m',
+            pedReady: false, weekly: '12h 30m', wagePerHour: 18500,
+            phone: '555-0182',
+            achievements: window.__ach,
         });
         renderOnline({
             total: 90, ping: 28,
@@ -348,5 +517,42 @@
             balance: 842500, isBoss: true,
         });
         setVisible(true);
+
+        // showcase loop for clean GIF/MP4 capture: animates the count-up,
+        // refreshes the online panel, and pops an achievement toast.
+        let tick = 0;
+        setInterval(function () {
+            tick++;
+            const cash = 125000 + (tick % 4) * 47250;
+            const bank = 2550000 + (tick % 3) * 318000;
+            renderPlayer({
+                brand: 'HEXNEY', subBrand: 'CITIZEN', name: 'John Doe', id: 17,
+                job: 'Mechanic', grade: 'Senior', groupKey: 'mechanic',
+                accent: '#f59e0b', emoji: '🔧', cash: cash, bank: bank,
+                health: 80 + (tick % 5) * 4, armor: 50 + (tick % 6) * 8,
+                hunger: 60 + (tick % 4) * 9, thirst: 45 + (tick % 5) * 10,
+                session: '3h ' + (10 + tick % 50) + 'm',
+                pedReady: false, weekly: '12h 30m', wagePerHour: 16000 + (tick % 4) * 2200,
+                phone: '555-0182',
+                achievements: window.__ach,
+            });
+            renderOnline({
+                total: 86 + (tick % 9), ping: 22 + (tick % 12),
+                groups: [
+                    { key: 'police',   label: 'Police',   emoji: '👮', color: '#3b82f6', count: 5 + (tick % 3) },
+                    { key: 'ems',      label: 'EMS',      emoji: '🚑', color: '#ef4444', count: 2 + (tick % 2) },
+                    { key: 'mechanic', label: 'Mechanic', emoji: '🔧', color: '#f59e0b', count: 4 },
+                    { key: 'civil',    label: 'Civilian', emoji: '🧑', color: '#e5e7eb', count: 75 + (tick % 6) },
+                ],
+            });
+            renderSociety({
+                show: true, kind: 'business', title: 'BUSINESS', emoji: '🏢',
+                jobLabel: 'Los Santos Customs', grade: 'Senior',
+                members: 4 + (tick % 2), balance: 842500 + (tick % 5) * 51000, isBoss: true,
+            });
+            if (tick % 3 === 0) {
+                showToast({ emoji: '🔥', label: 'Marathoner' });
+            }
+        }, 2600);
     }
 })();

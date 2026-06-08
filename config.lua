@@ -253,3 +253,43 @@ Config.SocietyBossGrades = { 'boss', 'chief', 'owner', 'leader' }
 -- A grade is also treated as boss if its numeric grade >= this value.
 -- Set to false to disable the numeric fallback.
 Config.SocietyBossGradeLevel = 4
+
+
+-----------------------------------------------------------
+-- V3.1: PRESENTATION / POLISH (RP-tuned defaults)
+-----------------------------------------------------------
+-- These preferences are pushed to the NUI on open. They are intentionally
+-- subtle: on a roleplay server the card should feel like an immersive ID,
+-- not an arcade HUD.
+
+-- Animated count-up for money / wage / society balance.
+-- On RP servers a short, eased tween reads as "premium" without being noisy.
+Config.AnimateNumbers   = true
+Config.CountUpDuration  = 650        -- ms for the count-up tween
+
+-- Responsive scaling. AutoScale fits the card to the player's resolution
+-- (relative to a 1080p reference); UIScale is an extra manual multiplier.
+Config.AutoScale = true
+Config.UIScale   = 1.0               -- 0.8 = smaller, 1.2 = larger
+Config.MinScale  = 0.75
+Config.MaxScale  = 1.35
+
+-- Sound design (asset-free: synthesized via WebAudio, no files shipped).
+-- Soft, low-volume cues. Many RP servers prefer silence, so this is easy
+-- to disable per-server or let players mute via Config.
+Config.Sounds = {
+    enabled     = true,
+    volume      = 0.35,              -- 0.0 .. 1.0 (kept low for RP)
+    open        = true,              -- soft open "whoosh"
+    close       = true,              -- soft close
+    achievement = true,              -- gentle unlock chime
+}
+
+-- Accessibility ------------------------------------------------------
+-- Reduced motion: disables slide/scale/pulse animations (also auto-honored
+-- if the player's OS/browser requests prefers-reduced-motion).
+Config.ReducedMotion = false
+
+-- Colorblind-safe stat ring palette (Okabe-Ito). Improves readability of
+-- HP/armor/hunger/thirst rings for color-vision-deficient players.
+Config.Colorblind = false

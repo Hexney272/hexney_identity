@@ -28,6 +28,9 @@ local pedHandle       = nil
 local pedTxd          = nil
 local pedReady        = false
 
+-- V3 state
+local cachedPhone     = nil        -- resolved phone number (client- or server-side)
+
 -----------------------------------------------------------
 -- UTIL
 -----------------------------------------------------------
@@ -275,7 +278,7 @@ local function buildAndSend()
         achievements = achievements,
 
         -- V3
-        phone        = getPhoneNumber(),
+        phone        = cachedPhone,
     }
 
     sendUI('update', { player = payload })
@@ -315,9 +318,9 @@ end
 -----------------------------------------------------------
 -- V3: PHONE NUMBER ADAPTER
 -----------------------------------------------------------
--- Tries known phone resources in order; each attempt is pcall-guarded so
--- a missing/foreign phone never errors. Returns a string or nil.
-local function getPhoneNumber()
+-- Client-side phone resources, tried in order. Each attempt is
+-- pcall-guarded so a missing/foreign phone never errors.
+local function resolvePhoneClient()
     if not Config.ShowPhone then return nil end
     local provider = Config.PhoneProvider or 'auto'
 
@@ -342,6 +345,25 @@ local function getPhoneNumber()
             return exports.npwd:getPhoneNumber()
         end)
         or nil
+end
+
+-- Resolves the phone number into `cachedPhone`. Client-side providers are
+-- read instantly; server-side providers (Quasar Smartphone v3) are fetched
+-- via a server callback and fill in shortly after (next refresh tick).
+local function resolvePhone()
+    if not Config.ShowPhone then cachedPhone = nil return end
+
+    cachedPhone = resolvePhoneClient()
+
+    local provider = Config.PhoneProvider or 'auto'
+    if cachedPhone == nil and (provider == 'auto' or provider == 'quasar') then
+        ESX.TriggerServerCallback('hexney_identity:getPhone', function(num)
+            if num and num ~= '' then
+                cachedPhone = tostring(num)
+                if isOpen then buildAndSend() end
+            end
+        end)
+    end
 end
 
 -----------------------------------------------------------
@@ -400,6 +422,7 @@ local function openCard()
     isOpen = true
     if not statsLoaded then loadStats() end
     requestHeadshot()
+    resolvePhone()
     sendUI('visibility', { visible = true })
     buildAndSend()
     refreshOnline()

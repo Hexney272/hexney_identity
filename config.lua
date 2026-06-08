@@ -204,8 +204,15 @@ Config.Achievements = {
 --
 -- Provider is auto-detected. 'auto' tries lb-phone, qb-phone, gksphone,
 -- npwd in order. Set to a specific string to force one, or false to hide.
+-- Quasar Smartphone v3 is resolved server-side (GetPlayerPhone(source)),
+-- the others are resolved client-side. 'auto' tries client-side first,
+-- then asks the server for server-side providers (Quasar).
 Config.ShowPhone     = true
-Config.PhoneProvider = 'auto'   -- 'auto' | 'lb-phone' | 'qb-phone' | 'gksphone' | 'npwd' | false
+Config.PhoneProvider = 'auto'   -- 'auto' | 'lb-phone' | 'qb-phone' | 'gksphone' | 'npwd' | 'quasar' | false
+
+-- Resource name(s) tried for Quasar Smartphone server export. Adjust if
+-- your build uses a different resource name.
+Config.QuasarResources = { 'qs-smartphone', 'qs-base' }
 
 -----------------------------------------------------------
 -- V3: FACTION / BUSINESS STATS (esx_society + esx_addonaccount)

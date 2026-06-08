@@ -231,6 +231,27 @@ ESX.RegisterServerCallback('hexney_identity:getSociety', function(source, cb)
 end)
 
 -----------------------------------------------------------
+-- V3: PHONE NUMBER (server-side providers, e.g. Quasar Smartphone v3)
+-----------------------------------------------------------
+ESX.RegisterServerCallback('hexney_identity:getPhone', function(source, cb)
+    if not Config.ShowPhone then return cb(nil) end
+
+    local number = nil
+    -- Quasar Smartphone exposes a server export keyed by player source.
+    for _, resource in ipairs(Config.QuasarResources or {}) do
+        local ok, res = pcall(function()
+            return exports[resource]:GetPlayerPhone(source)
+        end)
+        if ok and res and res ~= '' then
+            number = res
+            break
+        end
+    end
+
+    cb(number)
+end)
+
+-----------------------------------------------------------
 -- BOOT
 -----------------------------------------------------------
 loadStore()

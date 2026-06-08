@@ -49,7 +49,7 @@ GTA Online stílusú üveg-hatású (glassmorphism) játékoskártya, ami a kara
 | `esx_status`      | ⛅       | Éhség / szomjúság. Nélküle a gyűrűk 100%-on      |
 | `pma-voice`       | ⛅       | Mikrofon-vizualizáció (Mumble natívok)           |
 | `esx_addonaccount`| ⛅       | Frakció/vállalkozás kassza (society egyenleg)    |
-| Telefon resource  | ⛅       | lb-phone / qb-phone / gksphone / npwd (szám)     |
+| Telefon resource  | ⛅       | lb-phone / qb-phone / gksphone / npwd / Quasar v3 |
 
 > ⛅ = soft dependency. Ha nincs telepítve, az adott funkció szépen kimarad,
 > a resource nem dob hibát.
@@ -206,9 +206,16 @@ játékosonként perzisztálódik a szerveren (`data/stats.json`).
 ## 📱 Telefon-integráció
 
 A telefonszám automatikusan megjelenik a kártyán, ha elérhető. A provider
-auto-detektált (`Config.PhoneProvider = 'auto'`), sorrendben próbálva:
-`lb-phone` → `qb-phone` → `gksphone` → `npwd`. Konkrét providerre rögzíthető,
-vagy `false` esetén a telefon-sor rejtve marad.
+auto-detektált (`Config.PhoneProvider = 'auto'`):
+
+- **Kliens-oldali** (azonnali): `lb-phone` → `qb-phone` → `gksphone` → `npwd`
+- **Szerver-oldali** (callback): **Quasar Smartphone v3** (`qs-smartphone` /
+  `qs-base` `GetPlayerPhone(source)` exportja)
+
+Az `'auto'` előbb a kliens-oldali telefonokat próbálja, majd ha nincs találat,
+a szervertől kéri le (Quasar). Konkrét providerre rögzíthető
+(`'lb-phone'`, `'quasar'`, stb.), vagy `false` esetén a telefon-sor rejtve marad.
+A Quasar resource neve a `Config.QuasarResources` listában állítható.
 
 A kártya kívülről (pl. egy telefon-appból) is nyitható exportokkal:
 

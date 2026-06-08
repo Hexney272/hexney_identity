@@ -44,6 +44,10 @@
                     <span class="row__key">GRADE</span>
                     <span id="pGrade" class="row__val">—</span>
                 </div>
+                <div class="row" id="pPhoneRow" style="display:none">
+                    <span class="row__key">PHONE</span>
+                    <span id="pPhone" class="row__val">—</span>
+                </div>
             </div>
 
             <div class="divider"></div>
@@ -120,6 +124,31 @@
             <ul id="onlineList" class="online__list">
                 <!-- list items injected by app.js -->
             </ul>
+
+            <!-- V3: faction / business panel -->
+            <div id="society" class="society" style="display:none">
+                <div class="society__sep"></div>
+                <div class="society__head">
+                    <span id="societyEmoji" class="society__emoji">🛡</span>
+                    <span id="societyTitle" class="society__title">FACTION</span>
+                    <span id="societyBoss" class="society__boss" style="display:none">BOSS</span>
+                </div>
+                <div id="societyName" class="society__name">—</div>
+                <div class="society__rows">
+                    <div class="society__row">
+                        <span class="society__key">MEMBERS</span>
+                        <span id="societyMembers" class="society__val">0</span>
+                    </div>
+                    <div class="society__row">
+                        <span class="society__key">GRADE</span>
+                        <span id="societyGrade" class="society__val">—</span>
+                    </div>
+                    <div class="society__row" id="societyBalanceRow">
+                        <span class="society__key">FUNDS</span>
+                        <span id="societyBalance" class="society__val society__val--accent">—</span>
+                    </div>
+                </div>
+            </div>
         </aside>
 
         <!-- V2: achievement unlock toast -->

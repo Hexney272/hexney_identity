@@ -21,7 +21,7 @@ GTA Online stílusú üveg-hatású (glassmorphism) játékoskártya, ami a kara
 - **Luxus animációk** – becsúszás + scale + blur, fade helyett
 - **Session + ping** kijelzés
 
-### V2 (új)
+### V2
 - **Élő ped render** – a játékos karakterének valódi 3D fej-renderje az avatar
   helyén (natív `DrawSprite` a kártya fölött, pozícióban tartva)
 - **Achievement rendszer** – konfigurálható kihívások, kioldási toast,
@@ -30,15 +30,26 @@ GTA Online stílusú üveg-hatású (glassmorphism) játékoskártya, ami a kara
 - **Heti játékidő** – szerver oldalon perzisztált, heti bucketben (automatikus
   heti nullázás)
 
+### V3 (új)
+- **Telefon-integráció** – a telefonszám megjelenik a kártyán (lb-phone /
+  qb-phone / gksphone / npwd auto-detektálás), és exportokkal a telefon-app is
+  nyithatja a kártyát
+- **Frakció statok** – frakció-munkáknál (police/ems) panel: online tagok,
+  rang, és (boss grade-nek) a society egyenleg
+- **Vállalkozás statok** – business-munkáknál (pl. mechanic) ugyanaz a panel
+  „BUSINESS" címkével, a cég kasszájával
+
 ---
 
 ## 🧩 Függőségek
 
-| Resource      | Kötelező | Megjegyzés                                  |
-|---------------|:--------:|---------------------------------------------|
-| `es_extended` | ✅       | ESX Legacy (`getSharedObject`)              |
-| `esx_status`  | ⛅       | Éhség / szomjúság. Nélküle a gyűrűk 100%-on |
-| `pma-voice`   | ⛅       | Mikrofon-vizualizáció (Mumble natívok)      |
+| Resource          | Kötelező | Megjegyzés                                       |
+|-------------------|:--------:|--------------------------------------------------|
+| `es_extended`     | ✅       | ESX Legacy (`getSharedObject`)                   |
+| `esx_status`      | ⛅       | Éhség / szomjúság. Nélküle a gyűrűk 100%-on      |
+| `pma-voice`       | ⛅       | Mikrofon-vizualizáció (Mumble natívok)           |
+| `esx_addonaccount`| ⛅       | Frakció/vállalkozás kassza (society egyenleg)    |
+| Telefon resource  | ⛅       | lb-phone / qb-phone / gksphone / npwd (szám)     |
 
 > ⛅ = soft dependency. Ha nincs telepítve, az adott funkció szépen kimarad,
 > a resource nem dob hibát.
@@ -142,9 +153,9 @@ Ez betölt egy minta-karaktert és kinyitja a kártyát, hogy lásd a layoutot
 ## 🗺️ Roadmap (eladható verziók)
 
 - **V1:** karakter, munka, pénz, hunger/thirst, online, voice
-- **V2 (ez):** élő **ped render**, achievement rendszer, órabér- és
+- **V2:** élő **ped render**, achievement rendszer, órabér- és
   heti játékidő-statisztika
-- **V3:** telefon-integráció, frakció- és vállalkozás-statok
+- **V3 (ez):** telefon-integráció, frakció- és vállalkozás-statok
 
 ---
 
@@ -192,6 +203,51 @@ játékosonként perzisztálódik a szerveren (`data/stats.json`).
 
 ---
 
+## 📱 Telefon-integráció
+
+A telefonszám automatikusan megjelenik a kártyán, ha elérhető. A provider
+auto-detektált (`Config.PhoneProvider = 'auto'`), sorrendben próbálva:
+`lb-phone` → `qb-phone` → `gksphone` → `npwd`. Konkrét providerre rögzíthető,
+vagy `false` esetén a telefon-sor rejtve marad.
+
+A kártya kívülről (pl. egy telefon-appból) is nyitható exportokkal:
+
+```lua
+exports['hexney_identity']:Open()      -- megnyitja
+exports['hexney_identity']:Close()     -- bezárja
+exports['hexney_identity']:Toggle()    -- vált
+exports['hexney_identity']:IsOpen()    -- boolean
+```
+
+---
+
+## 🛡️ Frakció / 🏢 Vállalkozás statok
+
+Ha a játékos egy frakció- vagy business-munkában van, az online panel alatt
+megjelenik egy society panel: **online tagok**, **rang**, és (jogosultság esetén)
+a **society egyenleg**.
+
+A besorolás a munka-CSOPORT alapján történik:
+
+```lua
+Config.SocietyKind = {
+    police   = 'faction',
+    ems      = 'faction',
+    mechanic = 'business',
+}
+```
+
+Az egyenleg az `esx_addonaccount` shared accountból olvasódik
+(`society_<job>`). Alapból csak **boss grade** látja az összeget
+(`Config.SocietyBossOnly = true`); a többi tagnak `••••••` jelenik meg.
+A boss-t a grade neve (`Config.SocietyBossGrades`) vagy a numerikus szint
+(`Config.SocietyBossGradeLevel`) alapján ismerjük fel.
+
+> Ha az `esx_addonaccount` nincs telepítve, az egyenleg egyszerűen kimarad,
+> a tagszám és a rang viszont továbbra is működik.
+
+---
+
 ## 💾 Adatperzisztálás
 
 A heti játékidő és a kioldott achievementek a `data/stats.json` fájlban
@@ -202,6 +258,7 @@ leállásakor és lecsatlakozáskor is flush-öl. Adatbázis-háttér nem szüks
 
 ## 🧠 Technológia
 
-HTML · SCSS · Vanilla JS (NUI) · ESX Legacy · esx_status · pma-voice
+HTML · SCSS · Vanilla JS (NUI) · ESX Legacy · esx_status · pma-voice ·
+esx_addonaccount · lb-phone / qb-phone / gksphone / npwd
 
 Nincs build kötelezettség: a CSS előfordítva van, a JS dependency-mentes.

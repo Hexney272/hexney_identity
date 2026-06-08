@@ -33,6 +33,17 @@
         toast:        document.getElementById('toast'),
         toastEmoji:   document.getElementById('toastEmoji'),
         toastLabel:   document.getElementById('toastLabel'),
+        phoneRow: document.getElementById('pPhoneRow'),
+        phone:    document.getElementById('pPhone'),
+        society:        document.getElementById('society'),
+        societyEmoji:   document.getElementById('societyEmoji'),
+        societyTitle:   document.getElementById('societyTitle'),
+        societyBoss:    document.getElementById('societyBoss'),
+        societyName:    document.getElementById('societyName'),
+        societyMembers: document.getElementById('societyMembers'),
+        societyGrade:   document.getElementById('societyGrade'),
+        societyBalance: document.getElementById('societyBalance'),
+        societyBalanceRow: document.getElementById('societyBalanceRow'),
     };
 
     // ---- ring geometry ------------------------------------------------
@@ -148,6 +159,14 @@
         el.job.textContent   = p.job || '—';
         el.grade.textContent = p.grade && p.grade.length ? p.grade : '—';
 
+        // V3: phone (only show the row when a number is available)
+        if (p.phone) {
+            el.phoneRow.style.display = '';
+            el.phone.textContent = p.phone;
+        } else {
+            el.phoneRow.style.display = 'none';
+        }
+
         el.cash.textContent    = formatMoney(p.cash);
         el.bank.textContent    = formatMoney(p.bank);
         el.session.textContent = p.session || '0h 00m';
@@ -246,6 +265,32 @@
         el.voice.classList.toggle('talking', !!talking);
     }
 
+    // ---- V3: faction / business panel ---------------------------------
+    function renderSociety(data) {
+        if (!data || !data.show) {
+            el.society.style.display = 'none';
+            return;
+        }
+        el.society.style.display = '';
+
+        el.societyEmoji.textContent = data.emoji || '🛡';
+        el.societyTitle.textContent = data.title || 'FACTION';
+        el.societyName.textContent  = data.jobLabel || '—';
+        el.societyMembers.textContent = data.members != null ? data.members : 0;
+        el.societyGrade.textContent = data.grade || '—';
+        el.societyBoss.style.display = data.isBoss ? '' : 'none';
+
+        if (data.balance !== undefined && data.balance !== null) {
+            el.societyBalanceRow.style.display = '';
+            el.societyBalance.textContent = formatMoney(data.balance);
+        } else if (data.balanceHidden) {
+            el.societyBalanceRow.style.display = '';
+            el.societyBalance.textContent = '••••••';
+        } else {
+            el.societyBalanceRow.style.display = 'none';
+        }
+    }
+
     function setVisible(visible) {
         app.classList.toggle('visible', !!visible);
         if (!visible) setVoice(false);
@@ -261,6 +306,7 @@
             case 'voice':       setVoice(msg.talking); break;
             case 'ped':         setPed(msg.ready); break;
             case 'achievement': showToast(msg); break;
+            case 'society':     renderSociety(msg); break;
         }
     });
 
@@ -275,6 +321,7 @@
             accent: '#f59e0b', emoji: '🔧', cash: 125000, bank: 2550000,
             health: 88, armor: 60, hunger: 74, thirst: 52, session: '3h 12m',
             pedReady: false, weekly: '12h 30m', wagePerHour: 18500,
+            phone: '555-0182',
             achievements: [
                 { id: 'rookie',     label: 'Rookie',      emoji: '🆕', desc: 'Spend 1 hour this week',     unlocked: true },
                 { id: 'marathon',   label: 'Marathoner',  emoji: '🔥', desc: 'Play a 3h+ session',         unlocked: true },
@@ -294,6 +341,11 @@
                 { key: 'mechanic', label: 'Mechanic', emoji: '🔧', color: '#f59e0b', count: 4 },
                 { key: 'civil',    label: 'Civilian', emoji: '🧑', color: '#e5e7eb', count: 78 },
             ],
+        });
+        renderSociety({
+            show: true, kind: 'business', title: 'BUSINESS', emoji: '🏢',
+            jobLabel: 'Los Santos Customs', grade: 'Senior', members: 4,
+            balance: 842500, isBoss: true,
         });
         setVisible(true);
     }

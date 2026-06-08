@@ -173,6 +173,64 @@ RegisterNetEvent('hexney_identity:unlock', function(achId)
 end)
 
 -----------------------------------------------------------
+-- V3: FACTION / BUSINESS (society) STATS
+-----------------------------------------------------------
+local function isBossGrade(job)
+    if not job then return false end
+    local gradeName = tostring(job.grade_name or ''):lower()
+    for _, g in ipairs(Config.SocietyBossGrades or {}) do
+        if gradeName == tostring(g):lower() then return true end
+    end
+    if Config.SocietyBossGradeLevel and type(job.grade) == 'number' then
+        if job.grade >= Config.SocietyBossGradeLevel then return true end
+    end
+    return false
+end
+
+-- Reads society funds via esx_addonaccount (shared account). Returns a
+-- number or nil if unavailable. Wrapped so a missing dependency is safe.
+local function getSocietyBalance(jobName)
+    local accountName = (Config.SocietyAccountPrefix or 'society_') .. jobName
+    local ok, balance = pcall(function()
+        local acc = exports['esx_addonaccount']:GetSharedAccount(accountName)
+        if acc and acc.money then return acc.money end
+        return nil
+    end)
+    if ok then return balance end
+    return nil
+end
+
+ESX.RegisterServerCallback('hexney_identity:getSociety', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.job then return cb(nil) end
+
+    local job  = xPlayer.job
+    local jobName = job.name
+
+    -- count online members of the same job
+    local membersOnline = 0
+    for _, x in pairs(ESX.GetExtendedPlayers()) do
+        if x.job and x.job.name == jobName then
+            membersOnline = membersOnline + 1
+        end
+    end
+
+    local boss = isBossGrade(job)
+    local revealBalance = (not Config.SocietyBossOnly) or boss
+
+    cb({
+        jobName       = jobName,
+        jobLabel      = job.label,
+        gradeLabel    = job.grade_label,
+        gradeName     = job.grade_name,
+        isBoss        = boss,
+        membersOnline = membersOnline,
+        balance       = revealBalance and getSocietyBalance(jobName) or nil,
+        balanceHidden = (not revealBalance),
+    })
+end)
+
+-----------------------------------------------------------
 -- BOOT
 -----------------------------------------------------------
 loadStore()

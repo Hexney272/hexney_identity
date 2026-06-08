@@ -273,6 +273,9 @@ local function buildAndSend()
         wageEarned   = Config.ShowWage and earned or nil,
         wagePerHour  = Config.ShowWage and perHour or nil,
         achievements = achievements,
+
+        -- V3
+        phone        = getPhoneNumber(),
     }
 
     sendUI('update', { player = payload })
@@ -310,6 +313,75 @@ local function refreshOnline()
 end
 
 -----------------------------------------------------------
+-- V3: PHONE NUMBER ADAPTER
+-----------------------------------------------------------
+-- Tries known phone resources in order; each attempt is pcall-guarded so
+-- a missing/foreign phone never errors. Returns a string or nil.
+local function getPhoneNumber()
+    if not Config.ShowPhone then return nil end
+    local provider = Config.PhoneProvider or 'auto'
+
+    local function try(name, fn)
+        if provider ~= 'auto' and provider ~= name then return nil end
+        local ok, res = pcall(fn)
+        if ok and res and res ~= '' and res ~= false then return tostring(res) end
+        return nil
+    end
+
+    return try('lb-phone', function()
+            return exports['lb-phone']:GetEquippedPhoneNumber()
+        end)
+        or try('qb-phone', function()
+            local pd = exports['qb-core']:GetCoreObject().Functions.GetPlayerData()
+            return pd and pd.charinfo and pd.charinfo.phone
+        end)
+        or try('gksphone', function()
+            return exports['gksphone']:GetNumber()
+        end)
+        or try('npwd', function()
+            return exports.npwd:getPhoneNumber()
+        end)
+        or nil
+end
+
+-----------------------------------------------------------
+-- V3: FACTION / BUSINESS (society) PANEL
+-----------------------------------------------------------
+local function refreshSociety()
+    if not Config.ShowSociety then return end
+
+    local jobName  = PlayerData.job and PlayerData.job.name
+    local groupKey = Config.GetGroupKey(jobName)
+    local kind     = Config.SocietyKind and Config.SocietyKind[groupKey] or nil
+
+    if not kind then
+        sendUI('society', { show = false })
+        return
+    end
+
+    ESX.TriggerServerCallback('hexney_identity:getSociety', function(res)
+        if not res then sendUI('society', { show = false }) return end
+
+        local labels = (Config.SocietyLabels and Config.SocietyLabels[kind])
+            or { title = string.upper(kind), emoji = '' }
+
+        sendUI('society', {
+            show          = true,
+            kind          = kind,
+            title         = labels.title,
+            emoji         = labels.emoji,
+            accent        = (Config.JobGroups[groupKey] or {}).color,
+            jobLabel      = res.jobLabel,
+            grade         = res.gradeLabel,
+            members       = res.membersOnline,
+            balance       = res.balance,
+            balanceHidden = res.balanceHidden,
+            isBoss        = res.isBoss,
+        })
+    end)
+end
+
+-----------------------------------------------------------
 -- VOICE (pma-voice / Mumble)
 -----------------------------------------------------------
 local function pollVoice()
@@ -331,6 +403,7 @@ local function openCard()
     sendUI('visibility', { visible = true })
     buildAndSend()
     refreshOnline()
+    refreshSociety()
     lastTalking = nil
 end
 
@@ -344,6 +417,7 @@ end
 -- main loops (only do work while the card is visible)
 CreateThread(function()
     local dataAcc, onlineAcc = 0, 0
+    local societyAcc = 0
     while true do
         if isOpen then
             local step = Config.VoicePollRate
@@ -361,6 +435,12 @@ CreateThread(function()
             if onlineAcc >= Config.OnlineRefreshRate then
                 onlineAcc = 0
                 refreshOnline()
+            end
+
+            societyAcc = societyAcc + step
+            if societyAcc >= (Config.SocietyRefreshRate or 8000) then
+                societyAcc = 0
+                refreshSociety()
             end
         else
             Wait(300)
@@ -389,3 +469,14 @@ AddEventHandler('onResourceStop', function(res)
         releaseHeadshot()
     end
 end)
+
+-----------------------------------------------------------
+-- V3: EXPORTS (phone / external integrations)
+-----------------------------------------------------------
+-- exports['hexney_identity']:Open() / :Close() / :Toggle()
+exports('Open',   function() openCard()  end)
+exports('Close',  function() closeCard() end)
+exports('Toggle', function()
+    if isOpen then closeCard() else openCard() end
+end)
+exports('IsOpen', function() return isOpen end)

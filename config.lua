@@ -191,3 +191,58 @@ Config.Achievements = {
       desc = 'Work as a Mechanic',
       check = function(ctx) return ctx.jobGroup == 'mechanic' end },
 }
+
+
+-----------------------------------------------------------
+-- V3: PHONE INTEGRATION
+-----------------------------------------------------------
+-- Shows the player's phone number on the card and lets a phone app open
+-- the identity card via exports:
+--   exports['hexney_identity']:Open()
+--   exports['hexney_identity']:Close()
+--   exports['hexney_identity']:Toggle()
+--
+-- Provider is auto-detected. 'auto' tries lb-phone, qb-phone, gksphone,
+-- npwd in order. Set to a specific string to force one, or false to hide.
+Config.ShowPhone     = true
+Config.PhoneProvider = 'auto'   -- 'auto' | 'lb-phone' | 'qb-phone' | 'gksphone' | 'npwd' | false
+
+-----------------------------------------------------------
+-- V3: FACTION / BUSINESS STATS (esx_society + esx_addonaccount)
+-----------------------------------------------------------
+-- Shows a society panel (members online, society balance, your grade)
+-- under the online panel when the player belongs to a faction/business.
+-- Soft dependency: if esx_society / esx_addonaccount are missing, the
+-- balance simply shows as nil and the rest still works.
+Config.ShowSociety = true
+
+-- How often (ms) the society panel refreshes while open.
+Config.SocietyRefreshRate = 8000
+
+-- Map each job GROUP to a society "kind". Groups not listed are treated
+-- as neither (no society panel). 'faction' and 'business' only change the
+-- panel title + icon; both read society funds the same way.
+Config.SocietyKind = {
+    police   = 'faction',
+    ems      = 'faction',
+    mechanic = 'business',
+}
+
+-- Cosmetic labels per kind.
+Config.SocietyLabels = {
+    faction  = { title = 'FACTION',  emoji = '\u{1F6E1}' },  -- 🛡
+    business = { title = 'BUSINESS', emoji = '\u{1F3E2}' },  -- 🏢
+}
+
+-- esx_addonaccount society account prefix (society money is stored as
+-- e.g. "society_police"). Change only if your framework differs.
+Config.SocietyAccountPrefix = 'society_'
+
+-- Only reveal the society BALANCE to boss-grade members. Set false to
+-- show it to everyone in the job. Grade names considered "boss":
+Config.SocietyBossOnly  = true
+Config.SocietyBossGrades = { 'boss', 'chief', 'owner', 'leader' }
+
+-- A grade is also treated as boss if its numeric grade >= this value.
+-- Set to false to disable the numeric fallback.
+Config.SocietyBossGradeLevel = 4

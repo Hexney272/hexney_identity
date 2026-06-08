@@ -1,0 +1,12 @@
+# Node / tooling artifacts
+node_modules/
+package-lock.json
+package.json
+
+# Runtime-generated player stats (do not commit live data)
+data/stats.json
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log

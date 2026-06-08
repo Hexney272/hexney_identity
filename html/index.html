@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Identity Card 2026</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+    <!-- root carries the accent color + visibility state -->
+    <div id="app" class="app" data-group="civil">
+
+        <!-- ===================== LEFT: IDENTITY CARD ===================== -->
+        <section id="card" class="card">
+            <div class="card__glow"></div>
+
+            <!-- header -->
+            <header class="card__header">
+                <div class="brand">
+                    <span id="brand" class="brand__name">HEXNEY</span>
+                    <span id="subBrand" class="brand__sub">CITIZEN</span>
+                </div>
+                <div id="avatar" class="avatar">
+                    <span id="avatarIcon" class="avatar__icon">🧑</span>
+                    <div class="avatar__ring"></div>
+                </div>
+            </header>
+
+            <!-- identity block -->
+            <div class="rows">
+                <div class="row">
+                    <span class="row__key">NAME</span>
+                    <span id="pName" class="row__val">—</span>
+                </div>
+                <div class="row">
+                    <span class="row__key">ID</span>
+                    <span id="pId" class="row__val">—</span>
+                </div>
+                <div class="row">
+                    <span class="row__key">JOB</span>
+                    <span id="pJob" class="row__val">—</span>
+                </div>
+                <div class="row">
+                    <span class="row__key">GRADE</span>
+                    <span id="pGrade" class="row__val">—</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- money -->
+            <div class="money">
+                <div class="money__item">
+                    <span class="money__label">CASH</span>
+                    <span id="pCash" class="money__val">0$</span>
+                </div>
+                <div class="money__item">
+                    <span class="money__label">BANK</span>
+                    <span id="pBank" class="money__val money__val--bank">0$</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- stat rings -->
+            <div id="rings" class="rings">
+                <!-- ring nodes are injected by app.js -->
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- V2: wage + weekly playtime -->
+            <div id="stats2" class="money">
+                <div class="money__item">
+                    <span class="money__label">WAGE / H</span>
+                    <span id="pWage" class="money__val">0$</span>
+                </div>
+                <div class="money__item">
+                    <span class="money__label">WEEKLY</span>
+                    <span id="pWeekly" class="money__val money__val--bank">0h 00m</span>
+                </div>
+            </div>
+
+            <!-- V2: achievements -->
+            <div id="achWrap">
+                <div class="divider"></div>
+                <div class="ach__head">
+                    <span class="ach__title">ACHIEVEMENTS</span>
+                    <span id="achCount" class="ach__count">0/0</span>
+                </div>
+                <div id="achGrid" class="ach__grid"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- footer -->
+            <footer class="card__footer">
+                <div class="foot">
+                    <span class="foot__label">SESSION</span>
+                    <span id="pSession" class="foot__val">0h 00m</span>
+                </div>
+                <div class="foot">
+                    <span class="foot__label">PING</span>
+                    <span id="pPing" class="foot__val">0ms</span>
+                </div>
+                <!-- mic visualizer -->
+                <div id="voice" class="voice" title="Microphone">
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                </div>
+            </footer>
+        </section>
+
+        <!-- ===================== RIGHT: ONLINE PANEL ===================== -->
+        <aside id="online" class="online">
+            <div class="online__head">
+                <span class="online__title">ONLINE</span>
+                <span id="onlineTotal" class="online__total">0</span>
+            </div>
+            <ul id="onlineList" class="online__list">
+                <!-- list items injected by app.js -->
+            </ul>
+        </aside>
+
+        <!-- V2: achievement unlock toast -->
+        <div id="toast" class="toast">
+            <span id="toastEmoji" class="toast__emoji">🏆</span>
+            <div class="toast__body">
+                <span class="toast__title">ACHIEVEMENT UNLOCKED</span>
+                <span id="toastLabel" class="toast__label">—</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
